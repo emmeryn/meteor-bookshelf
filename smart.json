@@ -1,0 +1,11 @@
+{
+  "name": "bookshelf",
+  "description": "A Backbone based PostgreSQL ORM for packaged for Meteor",
+  "homepage": "https://github.com/austinrivas/meteor-bookshelf",
+  "author": "Austin Rivas <austinrivas@gmail.com> (https://github.com/austinrivas)",
+  "version": "0.6.8",
+  "git": "https://github.com/austinrivas/meteor-bookshelf",
+  "packages": {
+    "postgresql": {}
+  }
+}
