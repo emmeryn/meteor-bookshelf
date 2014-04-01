@@ -58,13 +58,17 @@ You should see this in the server console
 You should also be able to view this record in you PostgreSQL table `users`
 
 #### What just happened?
-
 The `User` model class intercepts the collection insert using the `Meteor.Collection` allow rules.
     * When a client inserts to a client meteor collection the insert is caught by the collection.allow rules and persisted to PostgreSQL
     * If the PostgreSQL write is successful the related fields are fetched and the joined doc is saved to MongoDB.
     * Any external writes to the watched PostgreSQL tables trigger a PostgreSQL event that is caught by the listening models.
     * When a notification is caught by a model, the model fetches the related fields and upserts the updated model to its MongoDB collection.
     * Meteor automatically updates the UI when the underlying MongoDB collection is updated.
+
+#### What is `Mediator`?
+`Mediator` is a simple notification class that allows models to subscribe to notifications from other models and your PostgreSQL db.
+
+`Mediator` is provided as an example to demonstrate the power of PostgreSQL notifications when tied to relation models.
 
 ### [Example PostgreSQL Schema](example/example_schema.sql)
 This schema includes
