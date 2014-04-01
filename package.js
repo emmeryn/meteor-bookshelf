@@ -8,11 +8,13 @@ Package.on_use(function (api, where) {
   ], ['server']);
 
   Npm.depends({
+    // 
+    pg: '2.11.1',
     // [SQL ORM based on Backbone](http://bookshelfjs.org)
     bookshelf: '0.6.8'
   });
 
-  api.add_files(['bookshelf.coffee'], ['server']);
+  api.add_files(['bookshelf.js'], ['server']);
 
   api.export(['Bookshelf'], ['server']);
 });
