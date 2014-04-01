@@ -7,3 +7,5 @@ standard-app-packages
 insecure
 coffeescript
 bookshelf
+underscore
+postgresql
