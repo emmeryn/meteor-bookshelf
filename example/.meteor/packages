@@ -6,6 +6,6 @@
 standard-app-packages
 insecure
 coffeescript
-bookshelf
 underscore
+bookshelf
 postgresql

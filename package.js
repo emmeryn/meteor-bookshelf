@@ -5,17 +5,15 @@ Package.describe({
 Package.on_use(function (api, where) {
   api.use([
     'underscore'
-  ],['client', 'server'])
-
-  api.use([
-    'postgresql'
-  ], ['server']);
+  ],['client', 'server']);
 
   Npm.depends({
-    //
+    // [node-postgres connector](https://github.com/brianc/node-postgres)
     pg: '2.11.1',
     // [SQL ORM based on Backbone](http://bookshelfjs.org)
-    bookshelf: '0.6.8'
+    bookshelf: '0.6.8',
+    // [Coffescript Mixins for Classes](https://www.npmjs.org/package/coffeescript-mixins)
+    'coffeescript-mixins':  '0.0.4'
   });
 
   api.add_files(['bookshelf.js'], ['server']);

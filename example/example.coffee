@@ -10,11 +10,3 @@ Meteor.startup( ->
   User.subscribe.all()
   User.subscribe.count()
 )
-
-if Meteor.isClient
-  ###
-  Meteor.setInterval ->
-    User.meteorCollection.insert
-      username: new Date()
-  , 100
-  ###
