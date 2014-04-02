@@ -30,13 +30,13 @@ class @User extends Model
       if Meteor.isServer
         # Calling save() persists the model to PostgreSQL
         # Notice that this only saves the model, not its related models
-        Mediator.log "#{User.collectionName}:persist:create:#{doc._id}"
+        User.mediator.log "#{User.collectionName}:persist:create:#{doc._id}"
         new User().save _.pick(doc, User.fields)
         # Once the model is saved then insert to mongo
         .then( User.persist.related
         , (err)->
-          Mediator.log "#{User.collectionName}:persist:create:#{doc._id}:error"
-          Mediator.log err
+          User.mediator.log "#{User.collectionName}:persist:create:#{doc._id}:error"
+          User.mediator.log err
         )
         return false
     # Insert a PostgreSQL model into MongoDB
@@ -44,21 +44,21 @@ class @User extends Model
       if Meteor.isServer
         # insert the model into MongoDB
         _id = User.meteorCollection.upsert model.toJSON()
-        Mediator.log "#{model.tableName}:persist:insert:#{_id}"
-        Mediator.log User.meteorCollection.find({ id: model.id }).fetch()
+        User.mediator.log "#{model.tableName}:persist:insert:#{_id}"
+        User.mediator.log User.meteorCollection.find({ id: model.id }).fetch()
     )
     upsert: Meteor.bindEnvironment( (model) ->
       if Meteor.isServer
         # upsert the model into MongoDB
         result = User.meteorCollection.upsert { id: model.id }, { $set: model.toJSON() }
-        Mediator.log "#{model.tableName}:persist:upsert:result"
-        Mediator.log result
-        Mediator.log User.meteorCollection.find({ id: model.id }).fetch()
+        User.mediator.log "#{model.tableName}:persist:upsert:result"
+        User.mediator.log result
+        User.mediator.log User.meteorCollection.find({ id: model.id }).fetch()
     )
     update: (userId, docs, fields, modifier) ->
       if Meteor.isServer
-        Mediator.log "#{User.collectionName}:persist:update"
-        Mediator.log
+        User.mediator.log "#{User.collectionName}:persist:update"
+        User.mediator.log
           userId: userId
           docs: docs
           fields: fields
@@ -66,24 +66,24 @@ class @User extends Model
         return false
     remove: Meteor.bindEnvironment( (userId, docs) ->
       if Meteor.isServer
-        Mediator.log "#{User.collectionName}:persist:remove"
+        User.mediator.log "#{User.collectionName}:persist:remove"
         return false
     )
     delete: Meteor.bindEnvironment( (model) ->
       if Meteor.isServer
-        Mediator.log "#{User.collectionName}:persist:delete"
+        User.mediator.log "#{User.collectionName}:persist:delete"
         User.meteorCollection.remove id: model.id
     )
     # Push a PostgreSQL collection into mongoDB
     collection: Meteor.bindEnvironment( (collection)->
       if Meteor.isServer
-        Mediator.log "#{User.collectionName}:persist:collection"
+        User.mediator.log "#{User.collectionName}:persist:collection"
         # upsert will create a new model if none exists or merge the model with the new model object
         collection.toArray().forEach User.persist.upsert
     )
     related: Meteor.bindEnvironment( (model) ->
       if Meteor.isServer
-        Mediator.log "#{model.tableName}:persist:related:#{model.id}"
+        User.mediator.log "#{model.tableName}:persist:related:#{model.id}"
         # retrieve an instance of this model with all of its related fields from postgres
         model.fetch
           withRelated: User.related
@@ -91,8 +91,8 @@ class @User extends Model
         # bindEnvironment is necssary again as this is another promise
         .then( User.persist.upsert
         , (err)->
-          Mediator.log "#{User.collectionName}:persist:related:#{model.id}:error"
-          Mediator.log err
+          User.mediator.log "#{User.collectionName}:persist:related:#{model.id}:error"
+          User.mediator.log err
         )
     )
   @setAllowRules: ->
@@ -144,27 +144,27 @@ class @User extends Model
     notification: ->
       if Meteor.isServer
         # if the subscription returns a notification
-        if notification = Mediator.subscribe User.collectionName
+        if notification = User.mediator.subscribe User.collectionName
           channel = notification[0]
           notification = notification[1]
-          Mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}"
+          User.mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}"
           switch channel
             when User.collectionName then User.handle.self(notification)
-            else Mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}:uncaught"
+            else User.mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}:uncaught"
     self: (notification) ->
       if Meteor.isServer
-        Mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}:operation:#{notification.operation}"
+        User.mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}:operation:#{notification.operation}"
         switch notification.operation
           when 'INSERT' then User.handle.insert(notification)
           when 'UPDATE' then User.handle.update(notification)
           when 'DELETE' then User.handle.delete(notification)
-          else Mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}:operation:#{notification.operation}:uncaught"
+          else User.mediator.log "#{User.collectionName}:notification:channel:#{notification.channel}:operation:#{notification.operation}:uncaught"
     insert: (notification) ->
       if Meteor.isServer
         User.persist.related new User JSON.parse notification.payload
         # Once the model is saved then insert to mongo
     update: (notification) ->
-      Mediator.log notification
+      User.mediator.log notification
     delete: (notification) ->
       if Meteor.isServer
         user = new User JSON.parse notification.payload
@@ -177,7 +177,7 @@ class @User extends Model
     notifications: ->
       # On the client listen to notifications from the PostgreSQL server
       if Meteor.isServer
-        Mediator.listen User.collectionName
+        User.mediator.listen User.collectionName
         Deps.autorun User.handle.notification
     all: ->
       # On the client listen to changes in the all_users publication
@@ -203,19 +203,20 @@ class @User extends Model
   @syncronizeMongoDB: ->
     if Meteor.isServer
       # build a complete user collection with all related fields
-      Mediator.log "#{User.collectionName}:sync"
+      User.mediator.log "#{User.collectionName}:sync"
       User.collection().fetch(
         withRelated: User.related
       ).then( User.persist.collection
       , (err)->
-        Mediator.log "#{User.collectionName}:sync:error"
-        Mediator.log err
+        User.mediator.log "#{User.collectionName}:sync:error"
+        User.mediator.log err
       )
 
   # setup subscriptions / publications
-  @initialize: _.once ->
-    Mediator.log "#{User.collectionName}:initialize"
+  @initialize: _.once (pgConString) ->
     if Meteor.isServer
+      User.mediator = Mediator.initialize pgConString
+      User.mediator.log "#{User.collectionName}:initialize"
       User.setAllowRules()
       User.syncronizeMongoDB()
       User.publish.all()

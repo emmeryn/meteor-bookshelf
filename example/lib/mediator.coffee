@@ -41,68 +41,76 @@
       OWNER TO postgresql;
 ###
 class @Mediator
-  # Wrap console log, common best practice
-  @log: (msg) ->
-    # Eventually server logs may be written to database and client logs handled by UI
-    console.log msg
+  # You can add statements inside the class definition
+  # which helps establish private scope (due to closures)
+  # instance is defined as null to force correct scope
+  instance = null
+  # Create a private class that we can initialize however
+  # defined inside this scope to force the use of the
+  # singleton class.
+  class Private
+    constructor: (@pgConString) ->
+      if Meteor.isServer
+        unless @pgConString
+          throw new Error 'A connection string is required to initialize a mediator e.g. (postgres://localhost/user)'
+        @connect()
 
-  # Initializes Mediator on client and server
-  @initialize: _.once( (pgConString) ->
-    Mediator.connect(pgConString)
-  )
+    # Mediator notification channels
+    channels: {}
 
-  # Connect to the PostgreSQL notification channels
-  @connect: _.once( (pgConString = null) ->
-    if Meteor.isServer
-      unless pgConString
-        Mediator.log "mediator:connect:error"
-        Mediator.log "pgConstring undefined"
-        return
-      # Define PostgreSQL client
-      Mediator.client = new pg.Client pgConString
-      # Create persistent connection to PostgreSQL
-      Mediator.client.connect()
-      # postgres notification event handler
-      Mediator.client.on "notification", (notification) ->
-        # write record to mongo or something
-        Mediator.log "mediator:notification:#{notification.channel}"
-        notification = Mediator.parse notification
-        Mediator.publish notification.channel, notification
-      Mediator.client.on 'error', (err) ->
-        Mediator.log "mediator:client:error"
-        Mediator.log err
-  )
+    # wrap console.log for future proofing
+    log: (message) -> console.log message
 
-  # Listen to the PostgreSQL notification channels defined by channel
-  @listen: (channel) ->
-    if Meteor.isServer
-      Mediator.client.query 'LISTEN "' + channel + '_INSERT"'
-      Mediator.client.query 'LISTEN "' + channel + '_UPDATE"'
-      Mediator.client.query 'LISTEN "' + channel + '_DELETE"'
+    # Connect to the PostgreSQL notification channels
+    connect: ->
+      if Meteor.isServer
+        # Define PostgreSQL client
+        @client = new pg.Client @pgConString
+        # Create persistent connection to PostgreSQL
+        @client.connect()
+        # postgres notification event handler
+        @client.on "notification", (notification) ->
+          # write record to mongo or something
+          @log "mediator:notification:#{notification.channel}"
+          notification = @parse notification
+          @publish notification.channel, notification
+        @client.on 'error', (err) ->
+          @log "mediator:client:error"
+          @log err
 
-  # parse a postgresql notifcation into a mediator notification
-  @parse: (notification) ->
-    if Meteor.isServer
-      notification =
-        channel: notification.channel.split('_')[0]
-        operation: notification.channel.split('_')[1]
-        payload: notification.payload
-      Mediator.log notification
-      return notification
+    # Listen to the PostgreSQL notification channels defined by channel
+    listen: (channel) ->
+      if Meteor.isServer
+        @client.query 'LISTEN "' + channel + '_INSERT"'
+        @client.query 'LISTEN "' + channel + '_UPDATE"'
+        @client.query 'LISTEN "' + channel + '_DELETE"'
 
-  # Mediator notification channels
-  @channels: {}
+    # parse a postgresql notifcation into a mediator notification
+    parse: (notification) ->
+      if Meteor.isServer
+        notification =
+          channel: notification.channel.split('_')[0]
+          operation: notification.channel.split('_')[1]
+          payload: notification.payload
+        @log notification
+        return notification
 
-  # Create a reactive publication the the specified channel
-  @publish: (name) ->
-    Mediator.channels[name].args = _.toArray(arguments)
-    Mediator.channels[name].deps.changed()
+    # Create a reactive publication the the specified channel
+    publish: (name) ->
+      @channels[name].args = _.toArray(arguments)
+      @channels[name].deps.changed()
 
-  # Create a reactive subscription for the specified channel
-  @subscribe: (name) ->
-    unless Mediator.channels[name]
-      Mediator.channels[name] =
-        deps: new Deps.Dependency
-        args: null
-    Mediator.channels[name].deps.depend()
-    Mediator.channels[name].args
+    # Create a reactive subscription for the specified channel
+    subscribe: (name) ->
+      unless @channels[name]
+        @channels[name] =
+          deps: new Deps.Dependency
+          args: null
+      @channels[name].deps.depend()
+      @channels[name].args
+
+  # This is a static method used to either retrieve the
+  # instance or create a new one.
+  @initialize: (pgConString) ->
+    instance ?= new Private(pgConString)
+

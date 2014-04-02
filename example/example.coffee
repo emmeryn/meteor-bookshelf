@@ -4,9 +4,9 @@ Meteor.startup( ->
   else pgConString = null
 
   # create a persistent connection with postgres to monitor notifications
-  Mediator.initialize(pgConString)
+  # Mediator.initialize(pgConString)
 
-  User.initialize()
+  User.initialize pgConString
   User.subscribe.all()
   User.subscribe.count()
 )
