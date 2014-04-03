@@ -6,8 +6,9 @@ if Meteor.isServer
       host: 'localhost'
       user: 'austin'
 
-  class @Model extends Bookshelf.PG.Model
-
 if Meteor.isClient
-  # Stub Bookshelf on the client
-  class @Model
+  # Stub bookshelf on the client
+  @Bookshelf =
+    PG:
+      Model: {}
+      Collection: {}

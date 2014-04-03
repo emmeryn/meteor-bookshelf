@@ -13,12 +13,14 @@ Package.on_use(function (api, where) {
     // [SQL ORM based on Backbone](http://bookshelfjs.org)
     bookshelf: '0.6.8',
     // [Coffescript Mixins for Classes](https://www.npmjs.org/package/coffeescript-mixins)
-    'coffeescript-mixins':  '0.0.4'
+    'mixen':  '0.5.4'
   });
 
   api.add_files(['bookshelf.js'], ['server']);
 
   api.export(['Bookshelf'], ['server']);
+
+  api.export(['Mixen'],['client', 'server']);
 });
 
 Package.on_test(function (api) {
