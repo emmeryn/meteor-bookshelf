@@ -6,25 +6,32 @@ if Meteor.isServer
       host: 'localhost'
       user: 'austin'
 
+  class @BookshelfModel extends Bookshelf.PG.Model
+    # wraps the asyncronous fetch method to run in a syncronous fiber
+    fetchSync: (options) ->
+      self = @
+      Async.runSync( ( done ) ->
+        self.fetch( options )
+        .then (result, error) ->
+            if error
+              self.error "#{self.getTableName()}:collection:fetch:error", error
+            done error, result
+      )
+  class @BookshelfCollection extends Bookshelf.PG.Collection
+    # wraps the asyncronous fetch method to run in a syncronous fiber
+    fetchSync: (options) ->
+      self = @
+      Async.runSync( ( done ) ->
+        self.fetch( options )
+        .then (result, error) ->
+          if error
+            self.error "#{self.model.getTableName()}:collection:fetch:error", error
+          done error, result
+      )
+
 if Meteor.isClient
-  # Stub bookshelf on the client
-  @Bookshelf =
-    PG:
-      Model: {}
-      Collection: {}
-
-class @BookshelfModel extends Bookshelf.PG.Model
-class @BookshelfCollection extends Bookshelf.PG.Collection
-  fetchSync: (options) ->
-    self = @
-    Async.runSync( ( done ) ->
-      self.fetch( options )
-      .then (result, error) ->
-        if error
-          self.error "#{self.model.getTableName()}:collection:fetch:error", error
-        done error, result
-    )
-
+  class @BookshelfModel
+  class @BookshelfCollection
 
 # mixin that provides methods for get related fields from PostgreSQL, save to PostgreSQL, and some backbone utilities
 class @Model extends Mixen( BookshelfModel, Logs )

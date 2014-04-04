@@ -30,9 +30,8 @@ class @Persist
       self.error "A document can only be persisted from the server."
     if Meteor.isServer
       # upsert the model into MongoDB
-      result = self.meteorCollection.upsert { id: model.id }, { $set: model.toJSON() }
-      self.log "#{model.tableName}:persist:upsert:result"
-      self.log result
+      self.meteorCollection.upsert { id: model.id }, { $set: model.toJSON() }
+      self.log "#{model.tableName}:persist:upsert:id:#{model.id}"
 
   persist_update: (userId, docs, fields, modifier) ->
     self = @
@@ -46,6 +45,7 @@ class @Persist
         fields: fields
         modifier: modifier
       return false
+
   persist_remove: Meteor.bindEnvironment( (userId, docs) ->
     self = @
     if Meteor.isClient
@@ -70,7 +70,7 @@ class @Persist
     if Meteor.isServer
       self.log "#{self.model.getTableName()}:persist:collection"
       # upsert will create a new model if none exists or merge the model with the new model object
-      collection.toArray().forEach self.persist_upsert.bind(self)
+      collection.toArray().forEach (model) -> self.persist_upsert model
 
   persist_related: Meteor.bindEnvironment( (model) ->
     self = @
@@ -80,7 +80,7 @@ class @Persist
       self.log "#{model.tableName}:persist:related:#{model.id}"
       # retrieve an instance of this model with all of its related fields from postgres
       model.fetch
-        withRelated: UserRelated
+        withRelated: self.model.relatedTables
       # Once the related fields have been fetched
       # bindEnvironment is necssary again as this is another promise
       .then( self.persist_upsert
@@ -98,8 +98,9 @@ class @Persist
       self.error "A collection can only be sync'd from the server."
     if Meteor.isServer
       # build a complete user collection with all related fields
+      self.log "#{self.model.getTableName()}:collection:syncronize:start"
       fetchRelatedCollection = self.fetchSync withRelated: self.model.relatedTables
       unless fetchRelatedCollection.error
         self.persist_collection fetchRelatedCollection.result
-        self.log "#{self.model.getTableName()}:collection:syncronized"
+        self.log "#{self.model.getTableName()}:collection:syncronize:end"
   )
