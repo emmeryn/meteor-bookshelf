@@ -3,6 +3,7 @@
     "bookshelf": {
       "path": ".."
     },
-    "npm": {}
+    "npm": {},
+    "mixen": {}
   }
 }

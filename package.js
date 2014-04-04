@@ -11,16 +11,12 @@ Package.on_use(function (api, where) {
     // [node-postgres connector](https://github.com/brianc/node-postgres)
     pg: '2.11.1',
     // [SQL ORM based on Backbone](http://bookshelfjs.org)
-    bookshelf: '0.6.8',
-    // [Coffescript Mixins for Classes](https://www.npmjs.org/package/coffeescript-mixins)
-    'mixen':  '0.5.4'
+    bookshelf: '0.6.8'
   });
 
   api.add_files(['bookshelf.js'], ['server']);
 
   api.export(['Bookshelf'], ['server']);
-
-  api.export(['Mixen'],['client', 'server']);
 });
 
 Package.on_test(function (api) {
