@@ -1,89 +1,105 @@
+# parse notifications and route them to the correct method
 class @Notifications
-  @include Logs
-  @include Persist
-  # parse notifications and route them to the correct method
-  handle:
   # catch all notification handler, primary router
-    notification: ->
-      if Meteor.isServer
-        # if the subscription returns a notification
-        if notification = @notifications.subscribe UserCollectionName
-          channel = notification[0]
-          notification = notification[1]
-          @log "notification:channel:#{notification.channel}"
-          switch channel
-            when UserCollectionName then @handle.self(notification)
-            else @error "notification:channel:#{notification.channel}:uncaught", notification
-    self: (notification) ->
-      if Meteor.isServer
-        @log "notification:channel:#{notification.channel}:operation:#{notification.operation}"
-        switch notification.operation
-          when 'INSERT' then @handle.insert notification
-          when 'UPDATE' then @handle.update notification
-          when 'DELETE' then @handle.delete notification
-          else @error "notification:channel:#{notification.channel}:operation:#{notification.operation}:uncaught", notification
-    insert: (notification) ->
-      if Meteor.isServer
-        @persist.related new @model JSON.parse notification.payload
-    # Once the model is saved then insert to mongo
-    update: (notification) -> @log notification
-    delete: (notification) ->
-      if Meteor.isServer
-        instance = new @model JSON.parse notification.payload
-        @persist.delete instance
+  handle_notification: ->
+    self = @
+    if Meteor.isServer
+      # if the subscription returns a notification
+      if notification = self.mediator.subscribe self.getTableName()
+        channel = notification[0]
+        notification = notification[1]
+        self.log "notification:channel:#{notification.channel}"
+        switch channel
+          when self.getTableName() then self.handle_self(notification)
+          else self.error "notification:channel:#{notification.channel}:uncaught", notification
+
+  handle_self: (notification) ->
+    self = @
+    if Meteor.isServer
+      self.log "notification:channel:#{notification.channel}:operation:#{notification.operation}"
+      switch notification.operation
+        when 'INSERT' then self.handle_insert notification
+        when 'UPDATE' then self.handle_update notification
+        when 'DELETE' then self.handle_delete notification
+        else self.error "notification:channel:#{notification.channel}:operation:#{notification.operation}:uncaught", notification
+
+  handle_insert: (notification) ->
+    self = @
+    if Meteor.isServer
+      self.persist_related new self.model JSON.parse notification.payload
+
+  # Once the model is saved then insert to mongo
+  handle_update: (notification) ->
+    self = @
+    self.log notification
+
+  handle_delete: (notification) ->
+    self = @
+    if Meteor.isServer
+      instance = new self.model JSON.parse notification.payload
+      self.persist_delete instance
+
   # All websocket subscriptions related to this model
   # These subscriptions are defined on the client and server
-  subscribe:
-    notifications: ->
-      # On the client listen to notifications from the PostgreSQL server
-      if Meteor.isServer
-        mediator.listen UserCollectionName
-        Deps.autorun @handle.notification
-    all: ->
-      # On the client listen to changes in the all_users publication
-      if Meteor.isClient
-        Meteor.subscribe "all_#{UserCollectionName}"
-    count: ->
-      # On the client create a collection and subscribe the the user_count publication
-      if Meteor.isClient
-        # set the default message for when the subcription is uninitialized
-        Session.setDefault "#{UserCollectionName}_count", 'Waiting on Subsription'
-        # setup User.count collection
-        if @count is undefined
-          @count = new Meteor.Collection "#{UserCollectionName}-count"
-        # subscribe to users_count reactive publication
-        Meteor.subscribe "#{UserCollectionName}_count"
-        Deps.autorun (->
-          models = @count.findOne()
-          unless models is undefined
-            Session.set "#{UserCollectionName}_count", models.count
-        )
-  publish:
-    all: ->
-      if Meteor.isClient
-        @error "Data can only be published from the server."
-      if Meteor.isServer
-        Meteor.publish "all_#{@model.tableName}", -> @meteorCollection.find()
-    count: ->
-      if Meteor.isClient
-        @error "Data can only be published from the server."
-      if Meteor.isServer
-        Meteor.publish "#{@model.tableName}_count", ->
-          count = 0 # the count of all users
-          initializing = true # true only when we first start
-          handle = @meteorCollection.find().observeChanges
-            added: =>
-              count++ # Increment the count when users are added.
-              @changed "#{@model.tableName}-count", 1, {count} unless initializing
-            removed: =>
-              count-- # Decrement the count when users are removed.
-              @changed "#{@model.tableName}-count", 1, {count}
-          initializing = false
-          # Call added now that we are done initializing. Use the id of 1 since
-          # there is only ever one object in the collection.
-          @added "#{@model.tableName}-count", 1, {count}
-          # Let the client know that the subscription is ready.
-          @ready()
-          # Stop the handle when the user disconnects or stops the subscription.
-          # This is really important or you will get a memory leak.
-          @onStop -> handle.stop()
+  subscribe_notifications: ->
+    self = @
+    # On the client listen to notifications from the PostgreSQL server
+    if Meteor.isServer
+      self.mediator.listen self.getTableName()
+      Deps.autorun self.handle_notification.bind(self)
+
+  # On the client listen to changes in the all_<model.tableName> publication
+  subscribe_all: ->
+    self = @
+    if Meteor.isClient
+      Meteor.subscribe "all_#{self.getTableName()}"
+
+  # On the client create a collection and subscribe the the <model.tableName>_count publication
+  subscribe_count: ->
+    self = @
+    if Meteor.isClient
+      # set the default message for when the subcription is uninitialized
+      Session.setDefault "#{self.getTableName()}_count", 'Waiting on Subsription'
+      # setup <model.tableName>.count collection
+      if self.count is undefined
+        self.count = new Meteor.Collection "#{self.model.getTableName()}-count"
+      # subscribe to <model.tableName>_count reactive publication
+      Meteor.subscribe "#{self.getTableName()}_count"
+      Deps.autorun (->
+        models = self.count.findOne()
+        unless models is undefined
+          Session.set "#{self.getTableName()}_count", models.count
+      )
+
+  publish_all: ->
+    self = @
+    if Meteor.isClient
+      self.error "Data can only be published from the server."
+    if Meteor.isServer
+      Meteor.publish "all_#{self.getTableName()}", -> self.meteorCollection.find()
+
+  publish_count: ->
+    self = @
+    if Meteor.isClient
+      self.error "Data can only be published from the server."
+    if Meteor.isServer
+      Meteor.publish "#{self.getTableName()}_count", ->
+        publish = @
+        count = 0 # the count of all <model.tableName>
+        initializing = true # true only when we first start
+        handle = self.meteorCollection.find().observeChanges
+          added: =>
+            count++ # Increment the count when <model.tableName> are added.
+            publish.changed "#{self.getTableName()}-count", 1, {count} unless initializing
+          removed: =>
+            count-- # Decrement the count when <model.tableName> are removed.
+            publish.changed "#{self.getTableName()}-count", 1, {count}
+        initializing = false
+        # Call added now that we are done initializing. Use the id of 1 since
+        # there is only ever one object in the collection.
+        publish.added "#{self.getTableName()}-count", 1, {count}
+        # Let the client know that the subscription is ready.
+        publish.ready()
+        # Stop the handle when the <model.tableName> disconnects or stops the subscription.
+        # This is really important or you will get a memory leak.
+        publish.onStop -> handle.stop()

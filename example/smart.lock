@@ -1,0 +1,26 @@
+{
+  "meteor": {},
+  "dependencies": {
+    "basePackages": {
+      "bookshelf": {
+        "path": ".."
+      },
+      "npm": {}
+    },
+    "packages": {
+      "bookshelf": {
+        "path": ".."
+      },
+      "npm": {
+        "git": "https://github.com/arunoda/meteor-npm.git",
+        "tag": "v0.2.6",
+        "commit": "177ab6118de5bf8cffb19481343d5762ff7a2aaf"
+      },
+      "postgresql": {
+        "git": "https://github.com/austinrivas/meteor-postgresql",
+        "tag": "v2.11.2",
+        "commit": "b5f682486e5fa03c94c30fc36043a24d31d31745"
+      }
+    }
+  }
+}

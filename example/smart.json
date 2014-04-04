@@ -2,6 +2,7 @@
   "packages": {
     "bookshelf": {
       "path": ".."
-    }
+    },
+    "npm": {}
   }
 }

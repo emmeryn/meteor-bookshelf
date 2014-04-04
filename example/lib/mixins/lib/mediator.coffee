@@ -50,68 +50,84 @@ class @Mediator
   # Create a private class that we can initialize however
   # defined inside this scope to force the use of the
   # singleton class.
-  class Private
-    @include Logs
-    constructor: (@pgConString) ->
+  class Private extends Mixen( Logs )
+    constructor: (pgConString) ->
+      self = @
       if Meteor.isServer
-        unless @pgConString
-          @error 'A connection string is required to initialize a mediator e.g. (postgres://localhost/user)'
+        unless self.pgConString
+          unless pgConString
+            self.error 'A connection string is required to initialize a mediator e.g. (postgres://localhost/user)'
+          self.pgConString = pgConString
         @connect()
-      @log "mediator:initialize"
+      self.log "mediator:initialized"
 
     # Mediator notification channels
     channels: {}
 
     # Connect to the PostgreSQL notification channels
     connect: ->
+      self = @
       if Meteor.isClient
-        @error "Mediator can only connect to PostgreSQL from the server."
+        self.error "Mediator can only connect to PostgreSQL from the server."
       if Meteor.isServer
-        # Define PostgreSQL client
-        @client = new pg.Client @pgConString
-        # Create persistent connection to PostgreSQL
-        @client.connect()
+        # wrap the async connect method of pg.client to return syncronously
+        asyncConnect = Async.runSync( ( done ) ->
+          # Define PostgreSQL client
+          client = new pg.Client self.pgConString
+          # Create persistent connection to PostgreSQL
+          client.connect( (error) ->
+            if error
+              self.error "mediator:connect:error", error
+            else
+              done(null, client)
+          )
+        )
+        self.client = asyncConnect.result
         # postgres notification event handler
-        @client.on "notification", (notification) ->
+        self.client.on "notification", (notification) ->
           # write record to mongo or something
-          @log "mediator:notification:#{notification.channel}"
-          notification = @parse notification
-          @publish notification.channel, notification
-        @client.on 'error', (err) ->
-          @error "mediator:client:error", err
+          self.log "mediator:notification:#{notification.channel}"
+          notification = self.parse notification
+          self.publish notification.channel, notification
+        self.client.on 'error', (err) ->
+          self.error "mediator:client:error", err
 
     # Listen to the PostgreSQL notification channels defined by channel
     listen: (channel) ->
+      self = @
       if Meteor.isClient
-        @error "You can only listen to a PostgreSQL notification channel on the server."
+        self.error "You can only listen to a PostgreSQL notification channel on the server."
       if Meteor.isServer
         # the strings must be escaped like this due to PostgreSQL being extremely sensitive to text types
-        @client.query 'LISTEN "' + channel + '_INSERT"'
-        @client.query 'LISTEN "' + channel + '_UPDATE"'
-        @client.query 'LISTEN "' + channel + '_DELETE"'
+        self.client.query 'LISTEN "' + channel + '_INSERT"'
+        self.client.query 'LISTEN "' + channel + '_UPDATE"'
+        self.client.query 'LISTEN "' + channel + '_DELETE"'
 
     # parse a postgresql notifcation into a mediator notification
     parse: (notification) ->
+      self = @
       notification =
         channel: notification.channel.split('_')[0]
         operation: notification.channel.split('_')[1]
         payload: notification.payload
-      @log notification
+      self.log notification
       return notification
 
     # Create a reactive publication the the specified channel
     publish: (name) ->
-      @channels[name].args = _.toArray(arguments)
-      @channels[name].deps.changed()
+      self = @
+      self.channels[name].args = _.toArray(arguments)
+      self.channels[name].deps.changed()
 
     # Create a reactive subscription for the specified channel
     subscribe: (name) ->
-      unless @channels[name]
-        @channels[name] =
+      self = @
+      unless self.channels[name]
+        self.channels[name] =
           deps: new Deps.Dependency
           args: null
-      @channels[name].deps.depend()
-      @channels[name].args
+      self.channels[name].deps.depend()
+      self.channels[name].args
 
   # This is a static method used to either retrieve the
   # instance or create a new one.

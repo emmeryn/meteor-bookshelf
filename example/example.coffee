@@ -1,15 +1,17 @@
 Meteor.startup( ->
   if Meteor.isServer
-    @pgConString = "postgres://localhost/austin"
-  else pgConString = null
+    # create a persistent connection with postgres to monitor notifications
+    Mediator.initialize "postgres://localhost/austin"
 
-  # create a persistent connection with postgres to monitor notifications
-  # Mediator.initialize(pgConString)
-  users = new UserCollection()
+)
+
+Meteor.startup( ->
+  Users = new @UserCollection()
   if Meteor.isServer
-    users.publish.all()
-    users.publish.count()
-  users.subscribe.notifications()
-  users.subscribe.all()
-  users.subscribe.count()
+    # create a persistent connection with postgres to monitor notifications
+    Users.publish_all()
+    Users.publish_count()
+  Users.subscribe_notifications()
+  Users.subscribe_all()
+  Users.subscribe_count()
 )

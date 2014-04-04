@@ -2,4 +2,4 @@
 Bookshelf = Npm.require('bookshelf');
 
 // [Coffescript Mixins for Classes](https://www.npmjs.org/package/coffeescript-mixins)
-Mixen = require('mixen')
+Mixen = Npm.require('mixen');

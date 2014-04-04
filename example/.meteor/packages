@@ -9,3 +9,4 @@ coffeescript
 underscore
 bookshelf
 postgresql
+npm
