@@ -1,9 +1,0 @@
-{
-  "packages": {
-    "bookshelf": {
-      "path": ".."
-    },
-    "npm": {},
-    "mixen": {}
-  }
-}
