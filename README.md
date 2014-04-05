@@ -1,4 +1,4 @@
-# BookshelfJS for Meteor
+# BookshelfJS v0.6.8 for Meteor
 
 Bookshelf is a javascript ORM for Node.js, built on the Knex SQL query builder.
 
@@ -6,8 +6,16 @@ Featuring both promise based and traditional callback interfaces, it extends the
 
 It is designed to work well with PostgreSQL, MySQL, and SQLite3.
 
+### [Dependencies](package.js)
+
 ### Meteorite Installation
 `$ mrt add bookshelf`
+
+## Example App
+`$ cd example && meteor`
+
+## Testing
+`$ cd example && meter test-packages bookshelf`
 
 ## [BookshelfJS Official Docs](http://bookshelfjs.org/)
 
