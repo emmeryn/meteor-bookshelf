@@ -3,14 +3,6 @@ Package.describe({
 });
 
 Package.on_use(function (api, where) {
-  api.use([
-    'underscore'
-  ],['server']);
-
-  api.export([
-    'Bookshelf'
-  ], ['server']);
-
   Npm.depends({
     // [node-postgres connector](https://github.com/brianc/node-postgres)
     pg: '2.11.1',
@@ -18,8 +10,16 @@ Package.on_use(function (api, where) {
     bookshelf: '0.6.8'
   });
 
+  api.use([
+    'underscore'
+  ],['server']);
+
   api.add_files([
     'bookshelf.js'
+  ], ['server']);
+
+  api.export([
+    'Bookshelf'
   ], ['server']);
 });
 
