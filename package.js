@@ -5,9 +5,9 @@ Package.describe({
 Package.on_use(function (api, where) {
   Npm.depends({
     // [node-postgres connector](https://github.com/brianc/node-postgres)
-    pg: '2.11.1',
+    pg: '4.4.2',
     // [SQL ORM based on Backbone](http://bookshelfjs.org)
-    bookshelf: '0.6.8'
+    bookshelf: '0.8.2'
   });
 
   api.use([
