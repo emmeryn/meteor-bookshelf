@@ -2,7 +2,7 @@ Package.describe({
   summary: "A Backbone based PostgreSQL ORM for packaged for Meteor"
 });
 
-Package.on_use(function (api, where) {
+Package.onUse(function (api, where) {
   Npm.depends({
     // [node-postgres connector](https://github.com/brianc/node-postgres)
     pg: '4.4.2',
@@ -14,7 +14,7 @@ Package.on_use(function (api, where) {
     'underscore'
   ],['server']);
 
-  api.add_files([
+  api.addFiles([
     'bookshelf.js'
   ], ['server']);
 
@@ -24,7 +24,7 @@ Package.on_use(function (api, where) {
 });
 
 
-Package.on_test(function (api) {
+Package.onTest(function (api) {
   api.use(['bookshelf', 'tinytest', 'test-helpers'], ['client', 'server']);
-  api.add_files('bookshelf.test.js', ['client', 'server']);
+  api.addFiles('bookshelf.test.js', ['client', 'server']);
 });
